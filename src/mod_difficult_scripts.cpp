@@ -14,21 +14,31 @@
 
 Difficult* Difficult::instance()
 {
-    static Difficult instance;
-    return &instance;
+	static Difficult instance;
+	return &instance;
 }
 
 void Difficult::LoadDifficultSettings()
 {	//这部分是优化用的，一次性计算对应函数是否会启用相应的调整，用来降低函数无数次调用时候的逻辑判断次数，并用 Disable 参数代替 Enable 参数，消除额外的一个!运算
-	if (sDifficult->IsEnabled && sDifficult->IsHPEnabled && !sDifficult->IsHPRealMode)
-		sDifficult->HPRealDisable = false;
-	else
-		sDifficult->HPRealDisable = true;
 
-	if (sDifficult->IsEnabled && sDifficult->IsHPEnabled && sDifficult->IsHPRealMode)
-		sDifficult->HPSpawnDisable = false;
+	if (sDifficult->IsEnabled && sDifficult->IsHPEnabled)
+	{
+		if (sDifficult->IsHPRealMode)
+		{
+			sDifficult->HPRealDisable = false;
+			sDifficult->HPSpawnDisable = false;
+		}
+		else
+		{
+			sDifficult->HPRealDisable = true;
+			sDifficult->HPSpawnDisable = false;
+		}
+	}
 	else
+	{
+		sDifficult->HPRealDisable = true;
 		sDifficult->HPSpawnDisable = true;
+	}
 
 	if (sDifficult->IsEnabled && sDifficult->IsHealingEnabled)
 		sDifficult->HealingDisable = false;
@@ -38,12 +48,12 @@ void Difficult::LoadDifficultSettings()
 	if (sDifficult->IsEnabled && sDifficult->IsDamageEnabled)
 		sDifficult->DamageDisable = false;
 	else
-		sDifficult->DamageDisable = true;		
+		sDifficult->DamageDisable = true;
 
-    if (!sDifficult->IsEnabled)
-    {
-        return;		//这个为false的话,后面的override每个判定第一条都是直接return,所以不需要读取数据库了
-    }
+	if (!sDifficult->IsEnabled)
+	{
+		return;		//这个为false的话,后面的override每个判定第一条都是直接return,所以不需要读取数据库了
+	}
 
 	if (QueryResult resultG = WorldDatabase.Query("SELECT * FROM 怪物_难度调整"))
 	{
@@ -62,77 +72,77 @@ void Difficult::LoadDifficultSettings()
 		} while (resultG->NextRow());
 	}
 
-    if (QueryResult resultA = WorldDatabase.Query("SELECT * FROM 地区（小）难度调整"))
-    {
-       do
-        {
-            uint32 AreaId = (*resultA)[0].Get<uint32>();
-            DifficultData data{};
+	if (QueryResult resultA = WorldDatabase.Query("SELECT * FROM 地区（小）难度调整"))
+	{
+		do
+		{
+			uint32 AreaId = (*resultA)[0].Get<uint32>();
+			DifficultData data{};
 			data.HaveDiff = 1;	//用来加快判断的,这样未命中的大部分底图可以用3个&&判断结束过程,但是需要调整的怪从最大12个判断增加到最大15个判断(不用的地图对应sql条目删除可最优匹配)
 			data.NormalMode = ((*resultA)[1].Get<int>() & 1) == 1;
 			data.HeroMode = ((*resultA)[1].Get<int>() & 2) == 2;
-            data.HealingNerfPct = (*resultA)[2].Get<float>();
-            data.OtherMeleePct = (*resultA)[3].Get<float>();
-            data.BossMeleePct = (*resultA)[4].Get<float>();
-            data.OtherSpellPct = (*resultA)[5].Get<float>();
-            data.BossSpellPct = (*resultA)[6].Get<float>();
+			data.HealingNerfPct = (*resultA)[2].Get<float>();
+			data.OtherMeleePct = (*resultA)[3].Get<float>();
+			data.BossMeleePct = (*resultA)[4].Get<float>();
+			data.OtherSpellPct = (*resultA)[5].Get<float>();
+			data.BossSpellPct = (*resultA)[6].Get<float>();
 			data.OtherDamage = ((*resultA)[7].Get<int>() & 1) == 1;
 			data.BossDamage = ((*resultA)[7].Get<int>() & 2) == 2;
 			data.OtherHPPct = (*resultA)[8].Get<float>();
 			data.BossHPPct = (*resultA)[9].Get<float>();
 			data.OtherHP = ((*resultA)[10].Get<int>() & 1) == 1;
 			data.BossHP = ((*resultA)[10].Get<int>() & 2) == 2;
-            sDifficult->AreaDiff[AreaId] = data;
-        } while (resultA->NextRow());
-    }
+			sDifficult->AreaDiff[AreaId] = data;
+		} while (resultA->NextRow());
+	}
 
-    if (QueryResult resultZ = WorldDatabase.Query("SELECT * FROM 地带（中）难度调整"))
-    {
-       do
-        {
-            uint32 ZoneId = (*resultZ)[0].Get<uint32>();
-            DifficultData data{};
+	if (QueryResult resultZ = WorldDatabase.Query("SELECT * FROM 地带（中）难度调整"))
+	{
+		do
+		{
+			uint32 ZoneId = (*resultZ)[0].Get<uint32>();
+			DifficultData data{};
 			data.HaveDiff = 1;
 			data.NormalMode = ((*resultZ)[1].Get<int>() & 1) == 1;
 			data.HeroMode = ((*resultZ)[1].Get<int>() & 2) == 2;
-            data.HealingNerfPct = (*resultZ)[2].Get<float>();
-            data.OtherMeleePct = (*resultZ)[3].Get<float>();
-            data.BossMeleePct = (*resultZ)[4].Get<float>();
-            data.OtherSpellPct = (*resultZ)[5].Get<float>();
-            data.BossSpellPct = (*resultZ)[6].Get<float>();
+			data.HealingNerfPct = (*resultZ)[2].Get<float>();
+			data.OtherMeleePct = (*resultZ)[3].Get<float>();
+			data.BossMeleePct = (*resultZ)[4].Get<float>();
+			data.OtherSpellPct = (*resultZ)[5].Get<float>();
+			data.BossSpellPct = (*resultZ)[6].Get<float>();
 			data.OtherDamage = ((*resultZ)[7].Get<int>() & 1) == 1;
 			data.BossDamage = ((*resultZ)[7].Get<int>() & 2) == 2;
 			data.OtherHPPct = (*resultZ)[8].Get<float>();
 			data.BossHPPct = (*resultZ)[9].Get<float>();
 			data.OtherHP = ((*resultZ)[10].Get<int>() & 1) == 1;
 			data.BossHP = ((*resultZ)[10].Get<int>() & 2) == 2;
-            sDifficult->ZoneDiff[ZoneId] = data;
-        } while (resultZ->NextRow());
-    }
+			sDifficult->ZoneDiff[ZoneId] = data;
+		} while (resultZ->NextRow());
+	}
 
-    if (QueryResult resultM = WorldDatabase.Query("SELECT * FROM 地图（大）难度调整"))
-    {
-       do
-        {
-            uint32 MapId = (*resultM)[0].Get<uint32>();
+	if (QueryResult resultM = WorldDatabase.Query("SELECT * FROM 地图（大）难度调整"))
+	{
+		do
+		{
+			uint32 MapId = (*resultM)[0].Get<uint32>();
 			DifficultData data{};
 			data.HaveDiff = 1;
 			data.NormalMode = ((*resultM)[1].Get<int>() & 1) == 1;
 			data.HeroMode = ((*resultM)[1].Get<int>() & 2) == 2;
-            data.HealingNerfPct = (*resultM)[2].Get<float>();
-            data.OtherMeleePct = (*resultM)[3].Get<float>();
-            data.BossMeleePct = (*resultM)[4].Get<float>();
-            data.OtherSpellPct = (*resultM)[5].Get<float>();
-            data.BossSpellPct = (*resultM)[6].Get<float>();
+			data.HealingNerfPct = (*resultM)[2].Get<float>();
+			data.OtherMeleePct = (*resultM)[3].Get<float>();
+			data.BossMeleePct = (*resultM)[4].Get<float>();
+			data.OtherSpellPct = (*resultM)[5].Get<float>();
+			data.BossSpellPct = (*resultM)[6].Get<float>();
 			data.OtherDamage = ((*resultM)[7].Get<int>() & 1) == 1;
 			data.BossDamage = ((*resultM)[7].Get<int>() & 2) == 2;
 			data.OtherHPPct = (*resultM)[8].Get<float>();
 			data.BossHPPct = (*resultM)[9].Get<float>();
 			data.OtherHP = ((*resultM)[10].Get<int>() & 1) == 1;
 			data.BossHP = ((*resultM)[10].Get<int>() & 2) == 2;
-            sDifficult->MapDiff[MapId] = data;
-        } while (resultM->NextRow());
-    }
+			sDifficult->MapDiff[MapId] = data;
+		} while (resultM->NextRow());
+	}
 }
 
 class Mod_Difficult_AllCreatureScript : public AllCreatureScript
@@ -144,7 +154,7 @@ public:
 	void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
 		//void OnAllCreatureUpdate(Creature* creature, uint32 /*diff*/) override
 	{
-		if (sDifficult->HPRealDisable || !creature || !creature->IsAlive() || !creature->GetMap())
+		if (sDifficult->HPSpawnDisable || !creature || !creature->IsAlive() || !creature->GetMap())
 			return;
 
 		if ((creature->IsHunterPet() || creature->IsPet() || creature->IsSummon()) && creature->IsControlledByPlayer())
@@ -220,20 +230,28 @@ public:
 		if (creature->GetMaxHealth() == newHp)
 			return;	//血量修改前后一致,直接退出
 
-		bool hpIsFull = creature->GetHealthPct() >= 100;
-		creature->SetMaxHealth(newHp);
+		uint8 hpPct = creature->GetHealthPct();
 		creature->SetCreateHealth(newHp);
-		creature->ResetPlayerDamageReq();
 		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
-		if (hpIsFull)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
-			creature->SetHealth(newHp);
+		creature->SetMaxHealth(newHp);
+		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
+		{
+			//creature->SetHealth(newHp);		//这个运算量最低
+			creature->SetFullHealth();	//这个其次?
+			//creature->SetHealth(creature->GetMaxHealth());	//这个最高
+		}
+		//else	//这个会导致战斗中变更血量的boss血量乱跳,甚至杀不死
+		//{
+		//	creature->SetHealth(creature->GetMaxHealth() * hpPct);			
+		//}
+		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
-    }
+	}
 
-    //void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
-    void OnAllCreatureUpdate(Creature* creature, uint32 /*diff*/) override
-    {
-		if (sDifficult->HPSpawnDisable || !creature || !creature->IsAlive() || !creature->GetMap())
+	//void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
+	void OnAllCreatureUpdate(Creature* creature, uint32 /*diff*/) override
+	{
+		if (sDifficult->HPRealDisable || !creature || !creature->IsAlive() || !creature->GetMap())
 			return;
 
 		if ((creature->IsHunterPet() || creature->IsPet() || creature->IsSummon()) && creature->IsControlledByPlayer())
@@ -309,29 +327,37 @@ public:
 		if (creature->GetMaxHealth() == newHp)
 			return;	//血量修改前后一致,直接退出
 
-		bool hpIsFull = creature->GetHealthPct() >= 100;
-		creature->SetMaxHealth(newHp);
+		uint8 hpPct = creature->GetHealthPct();
 		creature->SetCreateHealth(newHp);
-		creature->ResetPlayerDamageReq();
 		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
-		if (hpIsFull)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
-			creature->SetHealth(newHp);
+		creature->SetMaxHealth(newHp);
+		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
+		{
+			//creature->SetHealth(newHp);		//这个运算量最低
+			creature->SetFullHealth();	//这个其次?
+			//creature->SetHealth(creature->GetMaxHealth());	//这个最高
+		}
+		//else	//这个会导致战斗中变更血量的boss血量乱跳,甚至杀不死
+		//{
+		//	creature->SetHealth(creature->GetMaxHealth() * hpPct);			
+		//}
+		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
-    }
+	}
 };
 
 class Mod_Difficult_UnitScript : public UnitScript
 {
 public:
-    Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript") { }
+	Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript") { }
 
-    void ModifyHealReceived(Unit* target, Unit* healer, uint32& heal, SpellInfo const* spellInfo) override
-    {
-        if (sDifficult->HealingDisable || !target || !target->GetMap() || !healer || !spellInfo)
-            return;
+	void ModifyHealReceived(Unit* target, Unit* healer, uint32& heal, SpellInfo const* spellInfo) override
+	{
+		if (sDifficult->HealingDisable || !target || !target->GetMap() || !healer || !spellInfo)
+			return;
 
-        if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
-            return;
+		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+			return;
 
 		if (spellInfo->HasAttribute(SPELL_ATTR0_NO_IMMUNITIES) || spellInfo->Mechanic == MECHANIC_BANDAGE) // 跳过不受影响的法术（药水）
 			return;
@@ -345,13 +371,13 @@ public:
 		else
 		{
 			uint32 ZoneId = target->GetZoneId();
-			if (sDifficult->ZoneDiff[ZoneId].HaveDiff && ((sDifficult->ZoneDiff[ZoneId].HeroMode && RaidHero) || (sDifficult->ZoneDiff[ZoneId].NormalMode && !RaidHero)))			
+			if (sDifficult->ZoneDiff[ZoneId].HaveDiff && ((sDifficult->ZoneDiff[ZoneId].HeroMode && RaidHero) || (sDifficult->ZoneDiff[ZoneId].NormalMode && !RaidHero)))
 				heal = heal * sDifficult->ZoneDiff[ZoneId].HealingNerfPct;
 			else
 			{
 				uint32 MapId = target->GetMapId();
 				if (sDifficult->MapDiff[MapId].HaveDiff && ((sDifficult->MapDiff[MapId].HeroMode && RaidHero) || (sDifficult->MapDiff[MapId].NormalMode && !RaidHero)))
-					heal = heal * sDifficult->MapDiff[MapId].HealingNerfPct;				
+					heal = heal * sDifficult->MapDiff[MapId].HealingNerfPct;
 			}
 		}
 
@@ -363,15 +389,15 @@ public:
 					ChatHandler(player->GetSession()).PSendSysMessage("奶治疗: %s (%u) :疗效从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originHeal, heal);
 			}
 		}
-    }
+	}
 
-    void OnAuraApply(Unit* target, Aura* aura) override
-    {
-        if (sDifficult->HealingDisable || !target || !target->GetMap() || !aura)
-            return;
+	void OnAuraApply(Unit* target, Aura* aura) override
+	{
+		if (sDifficult->HealingDisable || !target || !target->GetMap() || !aura)
+			return;
 
-        if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
-            return;
+		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
 		float NerfPct = 1.0f;
@@ -388,7 +414,7 @@ public:
 			{
 				uint32 MapId = target->GetMapId();
 				if (sDifficult->MapDiff[MapId].HaveDiff && ((sDifficult->MapDiff[MapId].HeroMode && RaidHero) || (sDifficult->MapDiff[MapId].NormalMode && !RaidHero)))
-					NerfPct = sDifficult->MapDiff[MapId].HealingNerfPct;				
+					NerfPct = sDifficult->MapDiff[MapId].HealingNerfPct;
 			}
 		}
 
@@ -401,7 +427,7 @@ public:
 
 				if (spellInfo->HasAura(SPELL_AURA_SCHOOL_ABSORB))
 				{
-					std::list<AuraEffect*> AuraEffectList  = target->GetAuraEffectsByType(SPELL_AURA_SCHOOL_ABSORB);
+					std::list<AuraEffect*> AuraEffectList = target->GetAuraEffectsByType(SPELL_AURA_SCHOOL_ABSORB);
 					for (AuraEffect* eff : AuraEffectList)
 					{
 						if ((eff->GetAuraType() != SPELL_AURA_SCHOOL_ABSORB) || (eff->GetSpellInfo()->Id != spellInfo->Id))
@@ -422,18 +448,18 @@ public:
 				}
 			}
 		}
-    }
+	}
 
-    void ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage) override
-    {
-        if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
-            return;
+	void ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage) override
+	{
+		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
+			return;
 
-        if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
-            return;			
+		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
-	    uint32 originDamage = damage;	
+		uint32 originDamage = damage;
 
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
@@ -499,7 +525,7 @@ public:
 				}
 			}
 		}
-	
+
 		if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
 		{
 			if (Player* player = target->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
@@ -510,18 +536,18 @@ public:
 				}
 			}
 		}
-    }
+	}
 
-    void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo) override
-    {
-        if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
-            return;
+	void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo) override
+	{
+		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
+			return;
 
-        if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
-            return;			
+		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
-		int32 originDamage = damage;	
+		int32 originDamage = damage;
 
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
@@ -588,28 +614,28 @@ public:
 			}
 		}
 
-        if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
-        {
-            if (Player* player = target->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
-            {
-                if (player->GetSession())
-                {
-                    ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪技能: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
-                }
-            }
-        }
-    }
+		if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
+		{
+			if (Player* player = target->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
+			{
+				if (player->GetSession())
+				{
+					ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪技能: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+				}
+			}
+		}
+	}
 
-    void ModifyPeriodicDamageAurasTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo) override
-    {
-        if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
-            return;
+	void ModifyPeriodicDamageAurasTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo) override
+	{
+		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
+			return;
 
-        if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
-            return;			
+		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
-	    uint32 originDamage = damage;	
+		uint32 originDamage = damage;
 
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
@@ -676,42 +702,42 @@ public:
 			}
 		}
 
-        if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
-        {
-            if (Player* player = target->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
-            {
-                if (player->GetSession())
-                {
-                    ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪Dot: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
-                }
-            }
-        }
-    }
+		if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
+		{
+			if (Player* player = target->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
+			{
+				if (player->GetSession())
+				{
+					ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪Dot: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+				}
+			}
+		}
+	}
 };
 
 
 class Mod_Difficult_WorldScript : public WorldScript
 {
 public:
-    Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript") { }
+	Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript") { }
 
-    void OnAfterConfigLoad(bool /*reload*/) override
-    {
-        sDifficult->IsEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Enable", false);
-        sDifficult->IsDebugEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Debug", false);
-        sDifficult->IsHealingEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Healing", false);
-        sDifficult->IsDamageEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Damage", false);
-        sDifficult->IsHPEnabled = sConfigMgr->GetOption<bool>("ModDifficult.HP", false);
-        sDifficult->IsHPRealMode = sConfigMgr->GetOption<bool>("ModDifficult.HPRealMode", true);
-        sDifficult->LoadDifficultSettings();
-    }
+	void OnAfterConfigLoad(bool /*reload*/) override
+	{
+		sDifficult->IsEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Enable", false);
+		sDifficult->IsDebugEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Debug", false);
+		sDifficult->IsHealingEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Healing", false);
+		sDifficult->IsDamageEnabled = sConfigMgr->GetOption<bool>("ModDifficult.Damage", false);
+		sDifficult->IsHPEnabled = sConfigMgr->GetOption<bool>("ModDifficult.HP", false);
+		sDifficult->IsHPRealMode = sConfigMgr->GetOption<bool>("ModDifficult.HPRealMode", false);
+		sDifficult->LoadDifficultSettings();
+	}
 };
 
 
 // Add all scripts in one
 void AddModDifficultScripts()
 {
-    new Mod_Difficult_WorldScript();
+	new Mod_Difficult_WorldScript();
 	new Mod_Difficult_AllCreatureScript();
-    new Mod_Difficult_UnitScript();
+	new Mod_Difficult_UnitScript();
 }
