@@ -230,20 +230,16 @@ public:
 		if (creature->GetMaxHealth() == newHp)
 			return;	//血量修改前后一致,直接退出
 
-		uint8 hpPct = creature->GetHealthPct();
+		float hpPct = creature->GetHealthPct();
 		creature->SetCreateHealth(newHp);
-		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
 		creature->SetMaxHealth(newHp);
+		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
 		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
 		{
-			//creature->SetHealth(newHp);		//这个运算量最低
-			creature->SetFullHealth();	//这个其次?
-			//creature->SetHealth(creature->GetMaxHealth());	//这个最高
+			creature->SetFullHealth();
+			//creature->SetHealth(newHp);						//放弃这个,技能更改血量的boss可能不正确
+			//creature->SetHealth(creature->GetMaxHealth());	//放弃这个,用服务器支持的满血设定
 		}
-		//else	//这个会导致战斗中变更血量的boss血量乱跳,甚至杀不死
-		//{
-		//	creature->SetHealth(creature->GetMaxHealth() * hpPct);			
-		//}
 		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
 	}
@@ -327,20 +323,18 @@ public:
 		if (creature->GetMaxHealth() == newHp)
 			return;	//血量修改前后一致,直接退出
 
-		uint8 hpPct = creature->GetHealthPct();
-		creature->SetCreateHealth(newHp);
+		float hpPct = creature->GetHealthPct();
+		//creature->SetCreateHealth(newHp);
+		//creature->SetMaxHealth(newHp);	//这个实时调血的一定不能加,加了后会导致战斗中用技能调整血量的boss回血不满或者复活后不满血
 		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
-		creature->SetMaxHealth(newHp);
+		//creature->HandleStatModifier(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp, true);		//会不停的增加设定的血量
+		//creature->HandleStatModifier(UNIT_MOD_HEALTH, TOTAL_PCT, float(hpPct), true);			//会不停的按百分比增加血量
 		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
 		{
-			//creature->SetHealth(newHp);		//这个运算量最低
-			creature->SetFullHealth();	//这个其次?
-			//creature->SetHealth(creature->GetMaxHealth());	//这个最高
+			creature->SetFullHealth();
+			//creature->SetHealth(newHp);						//放弃这个,技能更改血量的boss可能不正确
+			//creature->SetHealth(creature->GetMaxHealth());	//放弃这个,用服务器支持的满血设定
 		}
-		//else	//这个会导致战斗中变更血量的boss血量乱跳,甚至杀不死
-		//{
-		//	creature->SetHealth(creature->GetMaxHealth() * hpPct);			
-		//}
 		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
 	}
