@@ -231,8 +231,8 @@ public:
 			return;	//血量修改前后一致,直接退出
 
 		float hpPct = creature->GetHealthPct();
-		creature->SetCreateHealth(newHp);
-		creature->SetMaxHealth(newHp);
+		//creature->SetCreateHealth(newHp);
+		//creature->SetMaxHealth(newHp);
 		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
 		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
 		{
