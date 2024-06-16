@@ -55,6 +55,18 @@ void Difficult::LoadDifficultSettings()
 		return;		//这个为false的话,后面的override每个判定第一条都是直接return,所以不需要读取数据库了
 	}
 
+	if (QueryResult resultS = WorldDatabase.Query("SELECT * FROM 技能_难度调整"))
+	{
+		do
+		{
+			uint32 SpellID = (*resultS)[0].Get<uint32>();
+			SpellDiffData data{};
+			data.OtherSpellPct = (*resultS)[1].Get<float>();
+			sDifficult->GuaiDiff[SpellID] = data;
+		} while (resultS->NextRow());
+	}
+
+
 	if (QueryResult resultG = WorldDatabase.Query("SELECT * FROM 怪物_难度调整"))
 	{
 		do
@@ -534,7 +546,16 @@ public:
 
 	void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage, SpellInfo const* spellInfo) override
 	{
-		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
+		if (sDifficult->DamageDisable || !spellInfo)
+			return;
+
+		if (SpellDiff[spellInfo->Id])
+		{
+			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
+			return;
+		}
+
+		if (!attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
 			return;
 
 		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
@@ -622,7 +643,16 @@ public:
 
 	void ModifyPeriodicDamageAurasTick(Unit* target, Unit* attacker, uint32& damage, SpellInfo const* spellInfo) override
 	{
-		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target || !spellInfo)
+		if (sDifficult->DamageDisable || !spellInfo)
+			return;
+
+		if (SpellDiff[spellInfo->Id])
+		{
+			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
+			return;
+		}
+
+		if (!attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
 			return;
 
 		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))

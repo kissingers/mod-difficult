@@ -27,6 +27,11 @@ struct DifficultData
 	bool BossHP;	
 };
 
+struct SpellDiffData
+{
+    float OtherSpellPct;
+};
+
 class Difficult
 {
 public:
@@ -50,6 +55,7 @@ public:
     std::map<uint32, DifficultData> AreaDiff;
     std::map<uint32, DifficultData> ZoneDiff;
     std::map<uint32, DifficultData> MapDiff;
+    std::map<uint32, SpellDiffData> SpellDiff;
 };
 
 #define sDifficult Difficult::instance()
