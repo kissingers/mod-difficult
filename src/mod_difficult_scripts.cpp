@@ -549,7 +549,7 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
-		if (SpellDiff[spellInfo->Id])
+		if (sDifficult->SpellDiff[spellInfo->Id])
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;
@@ -646,7 +646,7 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
-		if (SpellDiff[spellInfo->Id])
+		if (sDifficult->SpellDiff[spellInfo->Id])
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;
