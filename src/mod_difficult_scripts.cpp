@@ -61,6 +61,7 @@ void Difficult::LoadDifficultSettings()
 		{
 			uint32 SpellID = (*resultS)[0].Get<uint32>();
 			SpellDiffData data{};
+			data.HaveDiff = 1;		//用来加快判断的
 			data.OtherSpellPct = (*resultS)[1].Get<float>();
 			sDifficult->SpellDiff[SpellID] = data;
 		} while (resultS->NextRow());
@@ -549,7 +550,7 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
-		if (sDifficult->SpellDiff[spellInfo->Id])
+		if (sDifficult->SpellDiff[spellInfo->Id].HaveDiff)
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;
@@ -646,7 +647,7 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
-		if (sDifficult->SpellDiff[spellInfo->Id])
+		if (sDifficult->SpellDiff[spellInfo->Id].HaveDiff)
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;

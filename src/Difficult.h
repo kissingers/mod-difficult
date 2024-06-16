@@ -29,6 +29,7 @@ struct DifficultData
 
 struct SpellDiffData
 {
+    bool HaveDiff;
     float OtherSpellPct;
 };
 
