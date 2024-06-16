@@ -61,7 +61,7 @@ void Difficult::LoadDifficultSettings()
 		{
 			uint32 SpellID = (*resultS)[0].Get<uint32>();
 			SpellDiffData data{};
-			data.HaveDiff = 1;		//用来加快判断的
+			data.HaveDiff = 1;		//用来加快判断的,这样未命中的大部分技能可以快速结束匹配)
 			data.OtherSpellPct = (*resultS)[1].Get<float>();
 			sDifficult->SpellDiff[SpellID] = data;
 		} while (resultS->NextRow());
