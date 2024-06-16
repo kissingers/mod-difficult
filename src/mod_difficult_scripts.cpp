@@ -62,7 +62,7 @@ void Difficult::LoadDifficultSettings()
 			uint32 SpellID = (*resultS)[0].Get<uint32>();
 			SpellDiffData data{};
 			data.OtherSpellPct = (*resultS)[1].Get<float>();
-			sDifficult->GuaiDiff[SpellID] = data;
+			sDifficult->SpellDiff[SpellID] = data;
 		} while (resultS->NextRow());
 	}
 
