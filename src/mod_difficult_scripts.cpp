@@ -61,7 +61,7 @@ void Difficult::LoadDifficultSettings()
 		{
 			uint32 SpellID = (*resultS)[0].Get<uint32>();
 			SpellDiffData data{};
-			data.HaveDiff = 1;		//用来加快判断的,这样未命中的大部分技能可以快速结束匹配)
+			data.HaveDiff = 1;		//用来加快判断的
 			data.OtherSpellPct = (*resultS)[1].Get<float>();
 			sDifficult->SpellDiff[SpellID] = data;
 		} while (resultS->NextRow());
@@ -244,8 +244,8 @@ public:
 			return;	//血量修改前后一致,直接退出
 
 		float hpPct = creature->GetHealthPct();
-		//creature->SetCreateHealth(newHp);
-		//creature->SetMaxHealth(newHp);
+		creature->SetMaxHealth(newHp);
+		creature->SetCreateHealth(newHp);
 		creature->SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, (float)newHp);
 		if (hpPct >= 100)	//修改后当前血量超过100%的,主要针对血量调低情况下,修改为当前血量为调整后的满血血量
 		{
@@ -253,8 +253,8 @@ public:
 			//creature->SetHealth(newHp);						//放弃这个,技能更改血量的boss可能不正确
 			//creature->SetHealth(creature->GetMaxHealth());	//放弃这个,用服务器支持的满血设定
 		}
-		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
+		creature->ResetPlayerDamageReq();
 	}
 
 	//void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
@@ -348,8 +348,8 @@ public:
 			//creature->SetHealth(newHp);						//放弃这个,技能更改血量的boss可能不正确
 			//creature->SetHealth(creature->GetMaxHealth());	//放弃这个,用服务器支持的满血设定
 		}
-		creature->ResetPlayerDamageReq();
 		creature->UpdateAllStats();
+		creature->ResetPlayerDamageReq();
 	}
 };
 
