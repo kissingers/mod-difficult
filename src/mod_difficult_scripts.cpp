@@ -177,7 +177,7 @@ public:
 			return;
 
 		//CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
-		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->getLevel(), creatureTemplate->unit_class);
+		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
 		uint32 baseHealth = origCreatureStats->GenerateHealth(creatureTemplate);
 		uint32 newHp = baseHealth;
 		bool RaidHero = creature->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
@@ -270,7 +270,7 @@ public:
 			return;
 
 		CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
-		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->getLevel(), creatureTemplate->unit_class);
+		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
 		uint32 baseHealth = origCreatureStats->GenerateHealth(creatureTemplate);
 		uint32 newHp = baseHealth;
 		bool RaidHero = creature->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
@@ -393,7 +393,7 @@ public:
 			if (Player* player = healer->ToPlayer())	//只对玩家做debug,并且只提醒治疗者
 			{
 				if (player->GetSession())
-					ChatHandler(player->GetSession()).PSendSysMessage("奶治疗: %s (%u) :疗效从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originHeal, heal);
+					ChatHandler(player->GetSession()).PSendSysMessage("奶技能  {} {} 疗效从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originHeal, heal);
 			}
 		}
 	}
@@ -448,7 +448,7 @@ public:
 							if (Player* player = aura->GetCaster()->ToPlayer())	//只对玩家做debug,对玩家的宠物和守卫不检查
 							{
 								if (player->GetSession())
-									ChatHandler(player->GetSession()).PSendSysMessage("奶技能: %s (%u) :吸收从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, absorb, eff->GetAmount());
+									ChatHandler(player->GetSession()).PSendSysMessage("技减伤  {} {} 吸收从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, absorb, eff->GetAmount());
 							}
 						}
 					}
@@ -539,7 +539,7 @@ public:
 			{
 				if (player->GetSession())
 				{
-					ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪肉搏: 伤害从 %i 调整为 %i", originDamage, damage);
+					ChatHandler(player->GetSession()).PSendSysMessage("怪肉搏  伤害从 {} 调整为 {}", originDamage, damage);
 				}
 			}
 		}
@@ -636,7 +636,7 @@ public:
 			{
 				if (player->GetSession())
 				{
-					ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪技能: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+					ChatHandler(player->GetSession()).PSendSysMessage("怪技能  {} {} 伤害从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
 				}
 			}
 		}
@@ -733,7 +733,7 @@ public:
 			{
 				if (player->GetSession())
 				{
-					ChatHandler(target->ToPlayer()->GetSession()).PSendSysMessage("怪Dot: %s (%u) :伤害从 %i 调整为 %i", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+					ChatHandler(player->GetSession()).PSendSysMessage("怪Dot   {} {} 伤害从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
 				}
 			}
 		}
