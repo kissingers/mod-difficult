@@ -176,6 +176,12 @@ public:
 		if (creature->IsCritter() || creature->IsTotem() || creature->IsTrigger())
 			return;
 
+		//如果启用了NPCbot机器人，则条件编译例外机器人血量调整
+		#ifdef _BOT_AI_H
+		if (creature->IsNPCBotOrPet())
+			return;
+		#endif
+
 		//CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
 		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
 		uint32 baseHealth = origCreatureStats->GenerateHealth(creatureTemplate);
@@ -268,6 +274,12 @@ public:
 
 		if (creature->IsCritter() || creature->IsTotem() || creature->IsTrigger())
 			return;
+
+		//如果启用了NPCbot机器人，则条件编译例外机器人血量调整
+		#ifdef _BOT_AI_H
+		if (creature->IsNPCBotOrPet())
+			return;
+		#endif
 
 		CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
 		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
