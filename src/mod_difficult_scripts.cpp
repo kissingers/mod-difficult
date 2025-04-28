@@ -10,6 +10,7 @@
 #include "SpellAuraEffects.h"
 #include "Unit.h"
 #include "Difficult.h"
+#include "Creature.cpp"
 
 
 Difficult* Difficult::instance()
@@ -162,7 +163,6 @@ class Mod_Difficult_AllCreatureScript : public AllCreatureScript
 {
 public:
 	Mod_Difficult_AllCreatureScript() : AllCreatureScript("Mod_Difficult_AllCreatureScript") { }
-
 
 	void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
 		//void OnAllCreatureUpdate(Creature* creature, uint32 /*diff*/) override
@@ -368,7 +368,9 @@ public:
 class Mod_Difficult_UnitScript : public UnitScript
 {
 public:
-	Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript") { }
+	//Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript") { }
+	Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript", true, 
+	    { UNITHOOK_MODIFY_HEAL_RECEIVED, UNITHOOK_ON_AURA_APPLY, UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK }) { }
 
 	void ModifyHealReceived(Unit* target, Unit* healer, uint32& heal, SpellInfo const* spellInfo) override
 	{
@@ -756,7 +758,7 @@ public:
 class Mod_Difficult_WorldScript : public WorldScript
 {
 public:
-	Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript") { }
+	Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript", { WORLDHOOK_ON_AFTER_CONFIG_LOAD }) { }
 
 	void OnAfterConfigLoad(bool /*reload*/) override
 	{
