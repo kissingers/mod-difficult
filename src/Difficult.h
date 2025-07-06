@@ -12,51 +12,54 @@ struct DifficultData
 	bool NormalMode;
 	bool HeroMode;
 
-    float HealingNerfPct;
+	float HealingNerfPct;
 
-    float OtherMeleePct;
-    float BossMeleePct;
-    float OtherSpellPct;
+	float OtherMeleePct;
+	float BossMeleePct;
+	float OtherSpellPct;
 	float BossSpellPct;
 	bool OtherDamage;
 	bool BossDamage;
 
-    float OtherHPPct;
-    float BossHPPct;	
+	float OtherHPPct;
+	float BossHPPct;
 	bool OtherHP;
-	bool BossHP;	
+	bool BossHP;
+
+	float TakenMeleePct;
+	float TakenSpellPct;
 };
 
 struct SpellDiffData
 {
-    bool HaveDiff;
-    float OtherSpellPct;
+	bool HaveDiff;
+	float OtherSpellPct;
 };
 
 class Difficult
 {
 public:
-    static Difficult* instance();
+	static Difficult* instance();
 
-    void LoadDifficultSettings();
+	void LoadDifficultSettings();
 
-    bool IsEnabled{ false };
-    bool IsDebugEnabled{ false };
-    bool IsHPEnabled{ false };
-    bool IsHPRealMode{ true };
-    bool IsHealingEnabled{ false };
-    bool IsDamageEnabled{ false };
+	bool IsEnabled{ false };
+	bool IsDebugEnabled{ false };
+	bool IsHPEnabled{ false };
+	bool IsHPRealMode{ true };
+	bool IsHealingEnabled{ false };
+	bool IsDamageEnabled{ false };
 
-    bool HPRealDisable{ true };	
+	bool HPRealDisable{ true };
 	bool HPSpawnDisable{ true };
-    bool HealingDisable{ true };
-    bool DamageDisable{ true };
+	bool HealingDisable{ true };
+	bool DamageDisable{ true };
 
-    std::map<uint32, DifficultData> GuaiDiff;
-    std::map<uint32, DifficultData> AreaDiff;
-    std::map<uint32, DifficultData> ZoneDiff;
-    std::map<uint32, DifficultData> MapDiff;
-    std::map<uint32, SpellDiffData> SpellDiff;
+	std::map<uint32, DifficultData> GuaiDiff;
+	std::map<uint32, DifficultData> AreaDiff;
+	std::map<uint32, DifficultData> ZoneDiff;
+	std::map<uint32, DifficultData> MapDiff;
+	std::map<uint32, SpellDiffData> SpellDiff;
 };
 
 #define sDifficult Difficult::instance()

@@ -12,7 +12,6 @@
 #include "Difficult.h"
 #include "Creature.cpp"
 
-
 Difficult* Difficult::instance()
 {
 	static Difficult instance;
@@ -21,7 +20,6 @@ Difficult* Difficult::instance()
 
 void Difficult::LoadDifficultSettings()
 {	//这部分是优化用的，一次性计算对应函数是否会启用相应的调整，用来降低函数无数次调用时候的逻辑判断次数，并用 Disable 参数代替 Enable 参数，消除额外的一个!运算
-
 	if (sDifficult->IsEnabled && sDifficult->IsHPEnabled)
 	{
 		if (sDifficult->IsHPRealMode)
@@ -68,7 +66,6 @@ void Difficult::LoadDifficultSettings()
 		} while (resultS->NextRow());
 	}
 
-
 	if (QueryResult resultG = WorldDatabase.Query("SELECT * FROM 怪物_难度调整"))
 	{
 		do
@@ -82,6 +79,8 @@ void Difficult::LoadDifficultSettings()
 			data.OtherSpellPct = (*resultG)[3].Get<float>();
 			data.OtherHPPct = (*resultG)[4].Get<float>();
 			data.OtherHP = ((*resultG)[5].Get<int>() & 1) == 1;
+			data.TakenMeleePct = (*resultG)[6].Get<float>();
+			data.TakenSpellPct = (*resultG)[7].Get<float>();
 			sDifficult->GuaiDiff[GuaiID] = data;
 		} while (resultG->NextRow());
 	}
@@ -162,7 +161,7 @@ void Difficult::LoadDifficultSettings()
 class Mod_Difficult_AllCreatureScript : public AllCreatureScript
 {
 public:
-	Mod_Difficult_AllCreatureScript() : AllCreatureScript("Mod_Difficult_AllCreatureScript") { }
+	Mod_Difficult_AllCreatureScript() : AllCreatureScript("Mod_Difficult_AllCreatureScript") {}
 
 	void Creature_SelectLevel(const CreatureTemplate* creatureTemplate, Creature* creature) override
 		//void OnAllCreatureUpdate(Creature* creature, uint32 /*diff*/) override
@@ -177,10 +176,10 @@ public:
 			return;
 
 		//如果启用了NPCbot机器人，则条件编译例外机器人血量调整
-		#ifdef _BOT_AI_H
+#ifdef _BOT_AI_H
 		if (creature->IsNPCBotOrPet())
 			return;
-		#endif
+#endif
 
 		//CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
 		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
@@ -276,10 +275,10 @@ public:
 			return;
 
 		//如果启用了NPCbot机器人，则条件编译例外机器人血量调整
-		#ifdef _BOT_AI_H
+#ifdef _BOT_AI_H
 		if (creature->IsNPCBotOrPet())
 			return;
-		#endif
+#endif
 
 		CreatureTemplate const* creatureTemplate = creature->GetCreatureTemplate();
 		CreatureBaseStats const* origCreatureStats = sObjectMgr->GetCreatureBaseStats(creature->GetLevel(), creatureTemplate->unit_class);
@@ -369,8 +368,7 @@ class Mod_Difficult_UnitScript : public UnitScript
 {
 public:
 	//Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript") { }
-	Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript", true, 
-	    { UNITHOOK_MODIFY_HEAL_RECEIVED, UNITHOOK_ON_AURA_APPLY, UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK }) { }
+	Mod_Difficult_UnitScript() : UnitScript("Mod_Difficult_UnitScript", true, { UNITHOOK_MODIFY_HEAL_RECEIVED, UNITHOOK_ON_AURA_APPLY, UNITHOOK_MODIFY_MELEE_DAMAGE, UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, UNITHOOK_MODIFY_PERIODIC_DAMAGE_AURAS_TICK }) {}
 
 	void ModifyHealReceived(Unit* target, Unit* healer, uint32& heal, SpellInfo const* spellInfo) override
 	{
@@ -473,19 +471,40 @@ public:
 
 	void ModifyMeleeDamage(Unit* target, Unit* attacker, uint32& damage) override
 	{
-		if (sDifficult->DamageDisable || !attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
-			return;
-
-		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+		if (sDifficult->DamageDisable || !attacker || !attacker->GetMap() || !target || !target->GetMap())
 			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
 		uint32 originDamage = damage;
 
+		if (target->ToCreature())
+		{
+			uint32 D_GuaiId = target->GetEntry();
+			if (sDifficult->GuaiDiff[D_GuaiId].HaveDiff && ((sDifficult->GuaiDiff[D_GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[D_GuaiId].NormalMode && !RaidHero)))
+			{
+				damage *= sDifficult->GuaiDiff[D_GuaiId].TakenMeleePct;	//单独承受物理伤害,只分副本难度,不分小怪和boss
+
+				if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
+				{
+					if (Player* player = attacker->ToPlayer())	//只对玩家造成的物理伤害做debug
+					{
+						if (player->GetSession())
+						{
+							ChatHandler(player->GetSession()).PSendSysMessage("怪承受肉搏  伤害从 {} 调整为 {}", originDamage, damage);
+						}
+					}
+				}
+			}
+			return;    //如果目标是怪,直接返回,不需要返回damage,因为damage是引用,修改就生效
+		}
+
+		if (!((target->IsPlayer() || target->IsPet() || target->IsGuardian()) && attacker->ToCreature()))
+			return;
+
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
 		{
-			damage *= sDifficult->GuaiDiff[GuaiId].OtherMeleePct;	//单独改怪伤害,只分副本难度,不分小怪和boss
+			damage *= sDifficult->GuaiDiff[GuaiId].OtherMeleePct;	//单独改怪物理伤害,只分副本难度,不分小怪和boss
 		}
 		else
 		{
@@ -496,7 +515,7 @@ public:
 					if (sDifficult->AreaDiff[AreaId].BossDamage)		//并且开启boss的调整
 						damage *= sDifficult->AreaDiff[AreaId].BossMeleePct;		//修改boss肉搏伤害
 					else
-						return;	//boss不要求修改则退出	
+						return;	//boss不要求修改则退出
 				}
 				else	//是小怪
 				{
@@ -514,7 +533,7 @@ public:
 						if (sDifficult->ZoneDiff[ZoneId].BossDamage)		//并且开启boss的调整
 							damage *= sDifficult->ZoneDiff[ZoneId].BossMeleePct;		//修改boss肉搏伤害
 						else
-							return;	//boss不要求修改则退出	
+							return;	//boss不要求修改则退出
 					}
 					else	//是小怪
 					{
@@ -532,7 +551,7 @@ public:
 							if (sDifficult->MapDiff[MapId].BossDamage)		//并且开启boss的调整
 								damage *= sDifficult->MapDiff[MapId].BossMeleePct;		//修改boss肉搏伤害
 							else
-								return;	//boss不要求修改则退出	
+								return;	//boss不要求修改则退出
 						}
 						else	//是小怪
 						{
@@ -564,25 +583,47 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
+		//单独改列出的技能伤害,一旦修改完成,不再修改怪和副本难度对应的技能伤害
 		if (sDifficult->SpellDiff[spellInfo->Id].HaveDiff)
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;
 		}
 
-		if (!attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
-			return;
-
-		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+		if (!attacker || !attacker->GetMap() || !target || !target->GetMap())
 			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
-		int32 originDamage = damage;
+		uint32 originDamage = damage;
+
+		if (target->ToCreature())
+		{
+			uint32 D_GuaiId = target->GetEntry();
+			if (sDifficult->GuaiDiff[D_GuaiId].HaveDiff && ((sDifficult->GuaiDiff[D_GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[D_GuaiId].NormalMode && !RaidHero)))
+			{
+				damage *= sDifficult->GuaiDiff[D_GuaiId].TakenSpellPct;	//单独承受法术伤害,只分副本难度,不分小怪和boss
+
+				if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
+				{
+					if (Player* player = attacker->ToPlayer())	//只对玩家造成的法术伤害做debug
+					{
+						if (player->GetSession())
+						{
+							ChatHandler(player->GetSession()).PSendSysMessage("怪承受技能  {} {} 伤害从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+						}
+					}
+				}
+			}
+			return;    //如果目标是怪,直接返回,不需要返回damage,因为damage是引用,修改就生效
+		}
+
+		if (!((target->IsPlayer() || target->IsPet() || target->IsGuardian()) && attacker->ToCreature()))
+			return;
 
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
 		{
-			damage *= sDifficult->GuaiDiff[GuaiId].OtherSpellPct;	//单独改怪伤害,只分副本难度,不分小怪和boss
+			damage *= sDifficult->GuaiDiff[GuaiId].OtherSpellPct;	//单独改怪技能伤害,只分副本难度,不分小怪和boss
 		}
 		else
 		{
@@ -593,7 +634,7 @@ public:
 					if (sDifficult->AreaDiff[AreaId].BossDamage)		//并且开启boss的调整
 						damage *= sDifficult->AreaDiff[AreaId].BossSpellPct;		//修改boss技能伤害
 					else
-						return;	//boss不要求修改则退出	
+						return;	//boss不要求修改则退出
 				}
 				else	//是小怪
 				{
@@ -611,7 +652,7 @@ public:
 						if (sDifficult->ZoneDiff[ZoneId].BossDamage)		//并且开启boss的调整
 							damage *= sDifficult->ZoneDiff[ZoneId].BossSpellPct;		//修改boss技能伤害
 						else
-							return;	//boss不要求修改则退出	
+							return;	//boss不要求修改则退出
 					}
 					else	//是小怪
 					{
@@ -629,7 +670,7 @@ public:
 							if (sDifficult->MapDiff[MapId].BossDamage)		//并且开启boss的调整
 								damage *= sDifficult->MapDiff[MapId].BossSpellPct;		//修改boss技能伤害
 							else
-								return;	//boss不要求修改则退出	
+								return;	//boss不要求修改则退出
 						}
 						else	//是小怪
 						{
@@ -661,20 +702,42 @@ public:
 		if (sDifficult->DamageDisable || !spellInfo)
 			return;
 
+		//单独改列出的技能伤害,一旦修改完成,不再修改怪和副本难度对应的技能伤害
 		if (sDifficult->SpellDiff[spellInfo->Id].HaveDiff)
 		{
 			damage *= sDifficult->SpellDiff[spellInfo->Id].OtherSpellPct;
 			return;
 		}
 
-		if (!attacker || !attacker->ToCreature() || !attacker->GetMap() || !target)
-			return;
-
-		if (!(target->IsPlayer() || target->IsPet() || target->IsGuardian()))
+		if (!attacker || !attacker->GetMap() || !target || !target->GetMap())
 			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
 		uint32 originDamage = damage;
+
+		if (target->ToCreature())
+		{
+			uint32 D_GuaiId = target->GetEntry();
+			if (sDifficult->GuaiDiff[D_GuaiId].HaveDiff && ((sDifficult->GuaiDiff[D_GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[D_GuaiId].NormalMode && !RaidHero)))
+			{
+				damage *= sDifficult->GuaiDiff[D_GuaiId].TakenSpellPct;	//单独承受法术伤害,只分副本难度,不分小怪和boss
+
+				if (sDifficult->IsDebugEnabled && damage != originDamage)	//前面有目标不为null的判定,所以这里不用加target为空的检查
+				{
+					if (Player* player = attacker->ToPlayer())	//只对玩家造成的法术伤害做debug
+					{
+						if (player->GetSession())
+						{
+							ChatHandler(player->GetSession()).PSendSysMessage("怪承受Dot  {} {} 伤害从 {} 调整为 {}", spellInfo->SpellName[player->GetSession()->GetSessionDbcLocale()], spellInfo->Id, originDamage, damage);
+						}
+					}
+				}
+			}
+			return;    //如果目标是怪,直接返回,不需要返回damage,因为damage是引用,修改就生效
+		}
+
+		if (!((target->IsPlayer() || target->IsPet() || target->IsGuardian()) && attacker->ToCreature()))
+			return;
 
 		uint32 GuaiId = attacker->GetEntry();
 		if (sDifficult->GuaiDiff[GuaiId].HaveDiff && ((sDifficult->GuaiDiff[GuaiId].HeroMode && RaidHero) || (sDifficult->GuaiDiff[GuaiId].NormalMode && !RaidHero)))
@@ -690,7 +753,7 @@ public:
 					if (sDifficult->AreaDiff[AreaId].BossDamage)		//并且开启boss的调整
 						damage *= sDifficult->AreaDiff[AreaId].BossSpellPct;		//修改boss持续技能伤害
 					else
-						return;	//boss不要求修改则退出	
+						return;	//boss不要求修改则退出
 				}
 				else	//是小怪
 				{
@@ -708,7 +771,7 @@ public:
 						if (sDifficult->ZoneDiff[ZoneId].BossDamage)		//并且开启boss的调整
 							damage *= sDifficult->ZoneDiff[ZoneId].BossSpellPct;		//修改boss持续技能伤害
 						else
-							return;	//boss不要求修改则退出	
+							return;	//boss不要求修改则退出
 					}
 					else	//是小怪
 					{
@@ -726,7 +789,7 @@ public:
 							if (sDifficult->MapDiff[MapId].BossDamage)		//并且开启boss的调整
 								damage *= sDifficult->MapDiff[MapId].BossSpellPct;		//修改boss持续技能伤害
 							else
-								return;	//boss不要求修改则退出	
+								return;	//boss不要求修改则退出
 						}
 						else	//是小怪
 						{
@@ -754,11 +817,10 @@ public:
 	}
 };
 
-
 class Mod_Difficult_WorldScript : public WorldScript
 {
 public:
-	Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript", { WORLDHOOK_ON_AFTER_CONFIG_LOAD }) { }
+	Mod_Difficult_WorldScript() : WorldScript("Mod_Difficult_WorldScript", { WORLDHOOK_ON_AFTER_CONFIG_LOAD }) {}
 
 	void OnAfterConfigLoad(bool /*reload*/) override
 	{
@@ -771,7 +833,6 @@ public:
 		sDifficult->LoadDifficultSettings();
 	}
 };
-
 
 // Add all scripts in one
 void AddModDifficultScripts()

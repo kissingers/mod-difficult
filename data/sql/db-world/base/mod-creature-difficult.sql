@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS `怪物_难度调整`  (
   `技能` float NOT NULL DEFAULT 1,
   `血量` float NOT NULL DEFAULT 1,
   `血量开关_0禁1开` tinyint(4) NOT NULL DEFAULT 1,
+  `物受` float NOT NULL DEFAULT 1,
+  `技受` float NOT NULL DEFAULT 1,
   `备注` text,
    PRIMARY KEY (`怪物Entry`)
 );
