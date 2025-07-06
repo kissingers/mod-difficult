@@ -594,7 +594,7 @@ public:
 			return;
 
 		bool RaidHero = target->GetMap()->IsRaidOrHeroicDungeon();  //获取地图是否团队或者英雄本,下面判定是否 英雄本开启调整,且怪在英雄本 或者 普通本开启调整,且怪在普通本
-		uint32 originDamage = damage;
+		int32 originDamage = damage;
 
 		if (target->ToCreature())
 		{
